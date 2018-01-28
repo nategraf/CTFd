@@ -29,10 +29,6 @@ services:
   db:
     image: mariadb:10.4
     restart: always
-    environment:
-      - MYSQL_ROOT_PASSWORD=ctfd
-      - MYSQL_USER=ctfd
-      - MYSQL_PASSWORD=ctfd
     env_file:
       - mysql_secrets.env
     volumes:
