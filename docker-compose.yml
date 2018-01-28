@@ -14,6 +14,8 @@ services:
       - LOG_FOLDER=/var/log/CTFd
       - ACCESS_LOG=-
       - ERROR_LOG=-
+    env_file:
+      - mysql_secrets.env
     volumes:
       - .data/CTFd/logs:/var/log/CTFd
       - .data/CTFd/uploads:/var/uploads
@@ -31,6 +33,8 @@ services:
       - MYSQL_ROOT_PASSWORD=ctfd
       - MYSQL_USER=ctfd
       - MYSQL_PASSWORD=ctfd
+    env_file:
+      - mysql_secrets.env
     volumes:
       - .data/mysql:/var/lib/mysql
     networks:

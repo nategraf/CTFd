@@ -22,7 +22,6 @@ if not os.getenv('SECRET_KEY'):
         except (OSError, IOError):
             pass
 
-
 ''' SERVER SETTINGS '''
 
 
