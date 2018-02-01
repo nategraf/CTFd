@@ -2,7 +2,7 @@ import os
 
 ''' GENERATE SECRET KEY '''
 
-if not os.getenv('SECRET_KEY'):
+if not os.environ.get('SECRET_KEY'):
     # Attempt to read the secret from the secret file
     # This will fail if the secret has not been written
     try:
