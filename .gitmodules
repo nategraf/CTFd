@@ -1,0 +1,9 @@
+[submodule "CTFd/themes/naumachiactf"]
+	path = CTFd/themes/naumachiactf
+	url = https://github.com/nategraf/ctfd-naumachiactf-theme
+[submodule "CTFd/plugins/ctfd-naumachia-plugin"]
+	path = CTFd/plugins/ctfd-naumachia-plugin
+	url = https://github.com/nategraf/ctfd-naumachia-plugin
+[submodule "CTFd/plugins/ctfd-recaptcha-plugin"]
+	path = CTFd/plugins/ctfd-recaptcha-plugin
+	url = https://github.com/tamuctf/ctfd-recaptcha-plugin
