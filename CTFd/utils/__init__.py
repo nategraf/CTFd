@@ -58,6 +58,7 @@ class CTFdSerializer(JSONSerializer):
     Slightly modified datafreeze serializer so that we can properly
     export the CTFd database into a zip file.
     """
+
     def close(self):
         for path, result in self.buckets.items():
             result = self.wrap(result)
@@ -125,19 +126,19 @@ def init_logs(app):
 def init_errors(app):
     @app.errorhandler(404)
     def page_not_found(error):
-        return render_template('errors/404.html'), 404
+        return render_template('errors/404.html', error=error.description), 404
 
     @app.errorhandler(403)
     def forbidden(error):
-        return render_template('errors/403.html'), 403
+        return render_template('errors/403.html', error=error.description), 403
 
     @app.errorhandler(500)
     def general_error(error):
-        return render_template('errors/500.html'), 500
+        return render_template('errors/500.html', error=error.description), 500
 
     @app.errorhandler(502)
     def gateway_error(error):
-        return render_template('errors/502.html'), 502
+        return render_template('errors/502.html', error=error.description), 502
 
 
 def init_utils(app):
@@ -190,6 +191,9 @@ def init_utils(app):
 
     @app.before_request
     def csrf():
+        func = app.view_functions[request.endpoint]
+        if hasattr(func, '_bypass_csrf'):
+            return
         if not session.get('nonce'):
             session['nonce'] = sha512(os.urandom(10))
         if request.method == "POST":
@@ -284,6 +288,7 @@ def admins_only(f):
             return f(*args, **kwargs)
         else:
             return redirect(url_for('auth.login', next=request.path))
+
     return decorated_function
 
 
@@ -294,6 +299,7 @@ def authed_only(f):
             return f(*args, **kwargs)
         else:
             return redirect(url_for('auth.login', next=request.path))
+
     return decorated_function
 
 
@@ -319,7 +325,9 @@ def ratelimit(method="POST", limit=50, interval=300, key_prefix="rl"):
                     else:
                         cache.set(key, int(current) + 1, timeout=interval)
             return f(*args, **kwargs)
+
         return decorated_function
+
     return ratelimit_decorator
 
 
@@ -730,35 +738,42 @@ def base64decode(s, urldecode=False):
 
 
 def update_check(force=False):
-    update = app.config.get('UPDATE_CHECK') or force
+    # If UPDATE_CHECK is disabled don't check for updates at all.
+    if app.config.get('UPDATE_CHECK') is False:
+        return
+
+    # Get when we should check for updates next.
+    next_update_check = get_config('next_update_check') or 0
+
+    # If we have passed our saved time or we are forcing we should check.
+    update = (next_update_check < time.time()) or force
+
     if update:
-        next_update_check = get_config('next_update_check') or 0
-        if (next_update_check < time.time()) or force:
+        try:
+            params = {
+                'current': app.VERSION
+            }
+            check = requests.get(
+                'https://versioning.ctfd.io/versions/latest',
+                params=params,
+                timeout=0.1
+            ).json()
+        except requests.exceptions.RequestException as e:
+            pass
+        else:
             try:
-                params = {
-                    'current': app.VERSION
-                }
-                check = requests.get(
-                    'https://versioning.ctfd.io/versions/latest',
-                    params=params,
-                    timeout=0.1
-                ).json()
-            except requests.exceptions.RequestException as e:
-                pass
-            else:
-                try:
-                    latest = check['resource']['tag']
-                    html_url = check['resource']['html_url']
-                    if StrictVersion(latest) > StrictVersion(app.VERSION):
-                        set_config('version_latest', html_url)
-                    elif StrictVersion(latest) <= StrictVersion(app.VERSION):
-                        set_config('version_latest', None)
-                except KeyError:
+                latest = check['resource']['tag']
+                html_url = check['resource']['html_url']
+                if StrictVersion(latest) > StrictVersion(app.VERSION):
+                    set_config('version_latest', html_url)
+                elif StrictVersion(latest) <= StrictVersion(app.VERSION):
                     set_config('version_latest', None)
-            finally:
-                # 12 hours later
-                next_update_check_time = int(time.time() + 43200)
-                set_config('next_update_check', next_update_check_time)
+            except KeyError:
+                set_config('version_latest', None)
+        finally:
+            # 12 hours later
+            next_update_check_time = int(time.time() + 43200)
+            set_config('next_update_check', next_update_check_time)
     else:
         set_config('version_latest', None)
 
@@ -833,9 +848,20 @@ def import_ctf(backup, segments=None, erase=False):
         segments = ['challenges', 'teams', 'both', 'metadata']
 
     if not zipfile.is_zipfile(backup):
-        raise TypeError
+        raise zipfile.BadZipfile
 
     backup = zipfile.ZipFile(backup)
+
+    members = backup.namelist()
+    max_content_length = get_app_config('MAX_CONTENT_LENGTH')
+    for f in members:
+        if f.startswith('/') or '..' in f:
+            # Abort on malicious zip files
+            raise zipfile.BadZipfile
+        info = backup.getinfo(f)
+        if max_content_length:
+            if info.file_size > max_content_length:
+                raise zipfile.LargeZipFile
 
     groups = {
         'challenges': [
@@ -927,9 +953,11 @@ def import_ctf(backup, segments=None, erase=False):
                                     continue
                     for k, v in entry.items():
                         if k == 'chal' or k == 'chalid':
-                            entry[k] += chals_base
+                            if entry[k]:
+                                entry[k] += chals_base
                         if k == 'team' or k == 'teamid':
-                            entry[k] += teams_base
+                            if entry[k]:
+                                entry[k] += teams_base
 
                     if item == 'teams':
                         table.insert_ignore(entry, ['email'])
