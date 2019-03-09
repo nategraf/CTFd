@@ -1,4 +1,4 @@
-version: '2.1'
+version: '2.4'
 
 services:
   proxy:
@@ -25,12 +25,9 @@ services:
     environment:
       - UPLOAD_FOLDER=/var/uploads
       - LOG_FOLDER=/var/log/CTFd
-      - USE_RELOAD=false
+      - USE_RELOAD=False
       - REDIS_URL=redis://cache:6379
       - WORKERS=1
-      - LOG_FOLDER=/var/log/CTFd
-      - ACCESS_LOG=-
-      - ERROR_LOG=-
     env_file:
       - recaptcha.env
       - mysql_secrets.env

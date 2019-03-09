@@ -1,4 +1,4 @@
-version: '2'
+version: '2.4'
 
 services:
   ctfd:
@@ -6,23 +6,25 @@ services:
     restart: always
     ports:
       - "8000:8000"
-    env_file:
-      -  mysql_secrets.env
     environment:
       - UPLOAD_FOLDER=/var/uploads
       - LOG_FOLDER=/var/log/CTFd
+      - USE_RELOAD=False
+      - WORKERS=1
+    env_file:
+      - mysql_secrets.env
     volumes:
       - .data/CTFd/logs:/var/log/CTFd
       - .data/CTFd/uploads:/var/uploads
-      - .:/opt/CTFd:ro
+      - .:/opt/CTFd
     depends_on:
       - db
     networks:
-        default:
-        internal:
+      default:
+      internal:
 
   db:
-    image: mariadb:10.2
+    image: mariadb:10.4
     restart: always
     env_file:
       - mysql_secrets.env
@@ -30,6 +32,8 @@ services:
       - .data/mysql:/var/lib/mysql
     networks:
         internal:
+    # This command is required to set important mariadb defaults
+    command: [mysqld, --character-set-server=utf8mb4, --collation-server=utf8mb4_unicode_ci, --wait_timeout=28800, --log-warnings=0]
 
 networks:
     default:
