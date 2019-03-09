@@ -9,7 +9,8 @@ services:
     environment:
       - UPLOAD_FOLDER=/var/uploads
       - LOG_FOLDER=/var/log/CTFd
-      - USE_RELOAD=False
+      - USE_RELOAD=True
+      - RECAPTCHA_ENABLED=False
       - WORKERS=1
     env_file:
       - mysql_secrets.env
