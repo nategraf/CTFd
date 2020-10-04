@@ -22,7 +22,7 @@ services:
     user: root
     restart: always
     expose:
-      - "8000:8000"
+      - "8000"
     environment:
       - UPLOAD_FOLDER=/var/uploads
       - LOG_FOLDER=/var/log/CTFd
