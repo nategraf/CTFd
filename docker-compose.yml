@@ -19,13 +19,15 @@ services:
 
   ctfd:
     build: .
+    user: root
     restart: always
     expose:
-      - "8000"
+      - "8000:8000"
     environment:
       - UPLOAD_FOLDER=/var/uploads
       - LOG_FOLDER=/var/log/CTFd
       - USE_RELOAD=False
+      - REVERSE_PROXY=false
       - REDIS_URL=redis://cache:6379
       - WORKERS=1
     env_file:
@@ -41,8 +43,17 @@ services:
       default:
       internal:
 
+  nginx:
+    image: nginx:1.17
+    volumes:
+      - ./conf/nginx/http.conf:/etc/nginx/nginx.conf
+    ports:
+      - 80:80
+    depends_on:
+      - ctfd
+
   db:
-    image: mariadb:10.4
+    image: mariadb:10.4.12
     restart: always
     env_file:
       - mysql_secrets.env
