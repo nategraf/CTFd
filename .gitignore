@@ -80,5 +80,5 @@ node_modules/
 flask_profiler.sql
 
 # Secrets
-recaptcha.env
+captcha.env
 mysql_secrets.env
