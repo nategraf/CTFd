@@ -31,7 +31,7 @@ services:
       - REDIS_URL=redis://cache:6379
       - WORKERS=1
     env_file:
-      - recaptcha.env
+      - captcha.env
       - mysql_secrets.env
     volumes:
       - .data/CTFd/logs:/var/log/CTFd
