@@ -41,4 +41,4 @@ python manage.py db upgrade
 
 # Start CTFd
 echo "Starting CTFd"
-gunicorn --config ./gunicorn_config.py 'CTFd:create_app()'
+exec gunicorn --config ./gunicorn_config.py 'CTFd:create_app()'
